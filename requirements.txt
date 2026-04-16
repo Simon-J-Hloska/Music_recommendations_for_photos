@@ -1,0 +1,14 @@
+tkinterdnd2
+spotipy
+scikit-learn
+sympy
+pandas
+torch>=2.1
+torchvision>=0.16
+torchaudio>=2.1
+numpy>=1.24
+pillow>=10.0
+ftfy
+regex
+tqdm
+git+https://github.com/openai/CLIP.git
