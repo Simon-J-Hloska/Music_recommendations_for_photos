@@ -1,1 +1,9 @@
-Data for music x pics: https://github.com/ecnu-aigc/EMID
+## Third-Party Data Acknowledgment
+
+This project makes use of a public music dataset obtained from **Kaggle**, containing approximately **90,000 unique Spotify tracks** with associated audio features.
+
+The dataset was used for research and educational purposes, specifically for building mood clusters and training the emotion–music matching components of this project.
+
+I would like to express thanks to the original dataset authors and the Kaggle community for collecting, maintaining, and publicly sharing this resource, which made experimentation and development of this project possible.
+
+Dataset source: Spotify Tracks Dataset (Kaggle)
