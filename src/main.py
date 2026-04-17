@@ -27,6 +27,7 @@ from src.ui import ImageDrop
 RAW_DIR      = "../data/images/training/raw"
 RESIZED_DIR  = "../data/images/training/resized"
 RESULT_CSV   = "../data/images/training/images_w_emotion.csv"
+CLUSTERS_PATH = "../data/music/clusters.npy"
 
 raw_directory = "../data/images/user_images/raw"
 resized_directory = "../data/images/user_images/resized"
@@ -36,11 +37,9 @@ DEVICE       = "cuda" if torch.cuda.is_available() else "cpu"
 
 def main():
     drop = ImageDrop()
-    tracks_df, cluster_centers, labeler, preprocess, clip_model, student_model, matcher = prepare()
+    cluster_centers, labeler, preprocess, clip_model, student_model, matcher = initialize()
     while True:
         drop.run()
-        #calculating?
-
         normalizer = ImageNormalizer(raw_directory, resized_directory)
         normalizer.run()
 
@@ -57,6 +56,15 @@ def main():
                 drop.reset()
                 continue
 
+def get_or_create_clusters(n_clusters=32):
+    if os.path.exists(CLUSTERS_PATH):
+        cluster_centers = np.load(CLUSTERS_PATH)
+    else:
+        tracks_df = load_tracks(MUSIC_CSV)
+        cluster_centers, _ = build_mood_clusters(tracks_df, n_clusters=n_clusters)
+        np.save(CLUSTERS_PATH, cluster_centers)
+    return cluster_centers
+
 def clean_folders(folder_path_list):
     for folder in folder_path_list:
         folder = Path(folder)
@@ -64,9 +72,8 @@ def clean_folders(folder_path_list):
             if item.is_file():
                 item.unlink()
 
-def prepare():
-    tracks_df = load_tracks(MUSIC_CSV)
-    cluster_centers, _ = build_mood_clusters(tracks_df, n_clusters=32)
+def initialize():
+    cluster_centers = get_or_create_clusters(n_clusters=32)
     labeler = DatasetImageLabeler(device=DEVICE, cluster_centers=cluster_centers)
     clip_model = labeler.model
     preprocess = labeler.preprocess
@@ -75,7 +82,7 @@ def prepare():
     student_model.eval()
     matcher = DatasetMatcher(csv_path=MUSIC_CSV)
     matcher.load()
-    return tracks_df, cluster_centers, labeler, preprocess, clip_model, student_model, matcher
+    return cluster_centers, labeler, preprocess, clip_model, student_model, matcher
 
 def compute_images(preprocess, clip_model, student_model, dir_path, labeler, matcher):
     matches_dictionary = {}
@@ -90,7 +97,7 @@ def compute_images(preprocess, clip_model, student_model, dir_path, labeler, mat
 
         with torch.no_grad():
             student_prediction = (student_model(img_feats.float()).cpu().numpy()[0])
-        #clip_prediction = clip_predict(img_feats, labeler) #function to compute clip prediction
+        clip_prediction = clip_predict(img_feats, labeler) #function to compute clip prediction
         calculate_error(clip_prediction, student_prediction, image_name)
 
         matches = matcher.match(student_prediction, top_k=5)
